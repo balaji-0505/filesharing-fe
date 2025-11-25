@@ -8,17 +8,13 @@ const jsonHeaders = (token) => ({
 });
 
 export const userApi = {
-  async register(username, email, password) {
-    const res = await fetch(`${BASE}/register`, {
-      method: 'POST',
-      headers: jsonHeaders(),
-      body: JSON.stringify({ username, email, password })
-    });
-    const data = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(data.error || 'Registration failed');
-    return data;
-  }
-};
+  async register(name, email, password) {
+  const res = await fetch(`${BASE}/api/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+    body: new URLSearchParams({ name, email, password })
+  });
+
 
 export const authApi = {
   async login(email, password) {
