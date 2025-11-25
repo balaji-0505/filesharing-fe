@@ -1,4 +1,4 @@
-const BASE = '';
+const BASE = "http://localhost:30010/api"; 
 
 const getToken = () => localStorage.getItem('authToken');
 
