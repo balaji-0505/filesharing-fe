@@ -1,5 +1,5 @@
 // BASE URL for frontend → nginx → backend
-const BASE = "/api";
+const BASE = "";
 
 const getToken = () => localStorage.getItem('authToken');
 
