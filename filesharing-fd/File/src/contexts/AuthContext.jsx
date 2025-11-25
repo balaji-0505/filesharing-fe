@@ -1,6 +1,6 @@
 import { createContext, useContext, useReducer, useEffect } from 'react';
 import { UserRole } from '../types';
-import { authApi } from '../services/api';
+import { authApi, userApi } from '../services/api';
 
 const AuthContext = createContext();
 
@@ -80,12 +80,16 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
+  // FIXED REGISTER FUNCTION 🔥🔥🔥
   const register = async (name, email, password) => {
     dispatch({ type: 'LOGIN_START' });
     try {
-      const { token, user } = await authApi.register(name, email, password);
+      // USE JSON VERSION, NOT URLENCODED
+      const { token, user } = await userApi.register(name, email, password);
+
       localStorage.setItem('authToken', token);
       localStorage.setItem('userData', JSON.stringify(user));
+
       dispatch({ type: 'LOGIN_SUCCESS', payload: user });
       return { success: true };
     } catch (error) {
