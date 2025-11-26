@@ -23,11 +23,11 @@ const SessionView = () => {
 
   useEffect(() => {
     loadSessionData();
-    const interval = setInterval(loadSessionData, 3000); // Refresh every 3 seconds
+    const interval = setInterval(() => loadSessionData(true), 3000); // Refresh every 3 seconds
     return () => clearInterval(interval);
   }, [sessionId]);
 
-  const loadSessionData = async () => {
+  const loadSessionData = async (isPolling = false) => {
     try {
       const [sessionData, filesData] = await Promise.all([
         passhareApi.getSession(sessionId),
@@ -39,7 +39,11 @@ const SessionView = () => {
       console.log('Session files data:', filesData);
       setIsLoading(false);
     } catch (error) {
-      toast.error(error.message || 'Failed to load session');
+      if (!isPolling) {
+        toast.error(error.message || 'Failed to load session');
+      } else {
+        console.error('Polling error:', error);
+      }
       setIsLoading(false);
     }
   };
@@ -62,24 +66,24 @@ const SessionView = () => {
     try {
       const token = localStorage.getItem('authToken');
       const fileName = sessionFile.fileName || sessionFile.fileItem?.name;
-      
+
       if (!sessionFile.id) {
         toast.error('File ID not found');
         return;
       }
-      
+
       // Use passhare download endpoint - this allows any session participant to download
       const url = `/api/passhare/sessions/${sessionId}/files/${sessionFile.id}/download`;
-      const res = await fetch(url, { 
+      const res = await fetch(url, {
         method: 'GET',
-        headers: { Authorization: `Bearer ${token}` } 
+        headers: { Authorization: `Bearer ${token}` }
       });
-      
+
       if (!res.ok) {
         const errorData = await res.json().catch(() => ({}));
         throw new Error(errorData.error || 'Download failed');
       }
-      
+
       const blob = await res.blob();
       const objectUrl = URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -90,7 +94,7 @@ const SessionView = () => {
       document.body.removeChild(link);
       URL.revokeObjectURL(objectUrl);
       toast.success(`${fileName} downloaded successfully!`);
-      
+
       // Refresh to update download count
       loadSessionData();
     } catch (error) {
@@ -125,7 +129,7 @@ const SessionView = () => {
       toast.error('You are the session creator. Please use "End Session" instead.');
       return;
     }
-    
+
     if (window.confirm('Are you sure you want to leave this session?')) {
       try {
         await passhareApi.leaveSession(sessionId);
@@ -184,7 +188,7 @@ const SessionView = () => {
   return (
     <div className="min-h-screen">
       <Navigation />
-      
+
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
@@ -204,22 +208,20 @@ const SessionView = () => {
                 {isCreator ? (
                   <button
                     onClick={handleEndSession}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all hover-lift ${
-                      isDark
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all hover-lift ${isDark
                         ? 'bg-red-500/20 border border-red-500/50 text-red-300 hover:bg-red-500/30'
                         : 'bg-red-50 border border-red-200 text-red-600 hover:bg-red-100'
-                    }`}
+                      }`}
                   >
                     End Session
                   </button>
                 ) : (
                   <button
                     onClick={handleLeaveSession}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all hover-lift ${
-                      isDark
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all hover-lift ${isDark
                         ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
                         : 'bg-white border border-gray-300 text-gray-900 hover:bg-gray-50'
-                    }`}
+                      }`}
                   >
                     Leave Session
                   </button>
@@ -239,11 +241,10 @@ const SessionView = () => {
                   </h2>
                   <button
                     onClick={() => setShowFileSelector(!showFileSelector)}
-                    className={`px-4 py-2 rounded-lg font-semibold transition-all hover-lift flex items-center space-x-2 ${
-                      isDark
+                    className={`px-4 py-2 rounded-lg font-semibold transition-all hover-lift flex items-center space-x-2 ${isDark
                         ? 'bg-blue-500/20 border border-blue-500/50 text-blue-300 hover:bg-blue-500/30'
                         : 'bg-blue-50 border border-blue-200 text-blue-600 hover:bg-blue-100'
-                    }`}
+                      }`}
                   >
                     <Share2 className="w-4 h-4" />
                     <span>Select File</span>
@@ -263,11 +264,10 @@ const SessionView = () => {
                             key={file.id}
                             onClick={() => handleShareFile(file.id)}
                             disabled={isSharing}
-                            className={`w-full text-left px-4 py-2 rounded-lg transition-all hover-lift flex items-center space-x-3 ${
-                              isDark
+                            className={`w-full text-left px-4 py-2 rounded-lg transition-all hover-lift flex items-center space-x-3 ${isDark
                                 ? 'bg-white/10 hover:bg-white/20 text-white'
                                 : 'bg-white hover:bg-gray-100 text-gray-900'
-                            } ${isSharing ? 'opacity-50 cursor-not-allowed' : ''}`}
+                              } ${isSharing ? 'opacity-50 cursor-not-allowed' : ''}`}
                           >
                             <File className="w-4 h-4" />
                             <span className="flex-1">{file.name}</span>
@@ -318,11 +318,10 @@ const SessionView = () => {
                         <div className="flex items-center space-x-2">
                           <button
                             onClick={() => handleDownload(sessionFile)}
-                            className={`p-2 rounded-lg transition-all hover-lift ${
-                              isDark
+                            className={`p-2 rounded-lg transition-all hover-lift ${isDark
                                 ? 'bg-white/10 hover:bg-white/20 text-white'
                                 : 'bg-white hover:bg-gray-100 text-gray-900'
-                            }`}
+                              }`}
                             title="Download"
                           >
                             <Download className="w-5 h-5" />
@@ -330,11 +329,10 @@ const SessionView = () => {
                           {(isCreator || (sessionFile.sharedByUserId && Number(sessionFile.sharedByUserId) === Number(user.id))) && (
                             <button
                               onClick={() => handleRemoveSharedFile(sessionFile)}
-                              className={`p-2 rounded-lg transition-all hover-lift ${
-                                isDark
+                              className={`p-2 rounded-lg transition-all hover-lift ${isDark
                                   ? 'bg-red-500/20 hover:bg-red-500/30 text-red-300'
                                   : 'bg-red-50 hover:bg-red-100 text-red-600'
-                              }`}
+                                }`}
                               title="Remove from session"
                             >
                               <Trash2 className="w-5 h-5" />
